@@ -53,7 +53,7 @@ def process_log(file, args):
 
     cols = None
     values = None
-    with open(file, "r") as rfile:
+    with open(file, "rU") as rfile:
         for line in rfile:
             line = line.strip()
 
@@ -63,9 +63,9 @@ def process_log(file, args):
 
             # Column names not set, so define them now
             if cols is None:
-                cols = line.strip().split("\t")
+                cols = line.strip().split("\t")[1:] # ignore state column
                 values = []
-                for col in cols[1:]:
+                for col in cols:
                     # use a deque for fast appends
                     values.append(collections.deque(maxlen=args.lastn))
                 continue
@@ -73,7 +73,7 @@ def process_log(file, args):
             nums = line.split("\t")
             if int(nums.pop(0)) < args.burnin:
                 continue
-
+            assert len(nums) == len(cols)
             for ii in xrange(len(nums)):
                 values[ii].append(float(nums[ii]))
     return dict(zip(cols, values))
