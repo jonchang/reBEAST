@@ -21,7 +21,7 @@ the averaged parameters from one or more BEAST tracelogs.
 
 from __future__ import division
 
-__version__ = "0.1"
+__version__ = "0.2"
 
 import os.path
 import math
@@ -29,9 +29,8 @@ import sys
 import argparse
 import collections
 import multiprocessing
+import functools
 import xml.dom.minidom as minidom
-
-args = None
 
 def set_args():
     parser = argparse.ArgumentParser(description=__doc__,
@@ -44,11 +43,10 @@ def set_args():
     parser.add_argument("--ignore", nargs="+", default=[], help="Ignore these parameters.")
     parser.add_argument("--ignore-tag", nargs="+", default=[], help="Ignore parameters that are nested within these tags in the XML file.")
 
-    global args
-    args = parser.parse_args()
+    return parser.parse_args()
 
 
-def process_log(file):
+def process_log(file, args):
     """Returns all parameter values from a BEAST tracelog as a dictionary,
     optionally discarding burnin or retrieving only the last N recorded states.
     """
@@ -106,7 +104,7 @@ def find_parent(element, tags):
 
 
 def main():
-    set_args() # global args
+    args = set_args() # global args
 
     if args.burnin > 0:
         print "Discarding {0} states of burnin...".format(args.burnin)
@@ -115,7 +113,8 @@ def main():
 
     # Async read the tracelogs, then parse the XML file while we're waiting
     pool = multiprocessing.Pool()
-    promise_log = pool.map_async(process_log, args.log)
+    partial_process_log = functools.partial(process_log, args=args)
+    promise_log = pool.map_async(partial_process_log, args.log)
     tree = minidom.parse(args.xml)
     vals = get_col_means(promise_log.get())
 
