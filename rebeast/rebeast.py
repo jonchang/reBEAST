@@ -87,7 +87,8 @@ def get_col_means(dicts):
             for key, value in dic.iteritems():
                 merged[key].extend(value)
     else:
-        merged = dicts
+        # only one dict, so just use that one
+        merged = dicts.pop()
     for key, value in merged.iteritems():
         result[key] = sum(value) / len(value)
     return result
